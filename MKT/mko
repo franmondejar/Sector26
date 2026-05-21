@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Canal interceptado</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: #111;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      color: white;
+    }
+
+    .phone {
+      width: 100%;
+      max-width: 420px;
+      height: 92vh;
+      background: #e5ddd5;
+      border-radius: 22px;
+      overflow: hidden;
+      box-shadow: 0 0 30px rgba(0,0,0,.6);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .screen {
+      display: none;
+      height: 100%;
+    }
+
+    .screen.active {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .login {
+      background: linear-gradient(160deg, #050505, #1b1b1b);
+      justify-content: center;
+      padding: 30px;
+      text-align: center;
+    }
+
+    .login h1 {
+      color: #00ff99;
+      font-size: 1.5rem;
+      margin-bottom: 10px;
+    }
+
+    .login p {
+      color: #ccc;
+      font-size: .95rem;
+      margin-bottom: 25px;
+    }
+
+    .phone-input {
+      width: 100%;
+      padding: 15px;
+      border-radius: 12px;
+      border: none;
+      font-size: 1rem;
+      margin-bottom: 15px;
+      text-align: center;
+    }
+
+    button {
+      border: none;
+      background: #00a884;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .login button {
+      width: 100%;
+      padding: 15px;
+      border-radius: 12px;
+      font-size: 1rem;
+    }
+
+    .error {
+      color: #ff7777;
+      margin-top: 12px;
+      font-size: .9rem;
+      min-height: 20px;
+    }
+
+    .chat-header {
+      background: #202c33;
+      color: white;
+      padding: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: #00ff99;
+      color: #111;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+
+    .chat-header small {
+      color: #b8c4c9;
+    }
+
+    .messages {
+      flex: 1;
+      padding: 18px;
+      overflow-y: auto;
+      background:
+        linear-gradient(rgba(229,221,213,.85), rgba(229,221,213,.85)),
+        repeating-linear-gradient(45deg, #d8d0c7 0, #d8d0c7 2px, transparent 2px, transparent 10px);
+    }
+
+    .bubble {
+      max-width: 82%;
+      padding: 11px 13px;
+      border-radius: 12px;
+      margin-bottom: 10px;
+      color: #111;
+      line-height: 1.35;
+      font-size: .95rem;
+      animation: appear .3s ease;
+      clear: both;
+    }
+
+    .received {
+      background: white;
+      float: left;
+    }
+
+    .sent {
+      background: #d9fdd3;
+      float: right;
+    }
+
+    .system {
+      background: #fff3cd;
+      margin: 12px auto;
+      text-align: center;
+      font-size: .85rem;
+      max-width: 90%;
+      clear: both;
+    }
+
+    .chat-input {
+      background: #202c33;
+      padding: 10px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .message-input {
+      flex: 1;
+      padding: 12px 15px;
+      border-radius: 20px;
+      border: none;
+      font-size: .95rem;
+      outline: none;
+    }
+
+    .send {
+      width: 48px;
+      min-width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      font-size: 1.1rem;
+    }
+
+    .send:disabled {
+      opacity: .45;
+      cursor: not-allowed;
+    }
+
+    @keyframes appear {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="phone">
+
+    <div id="loginScreen" class="screen login active">
+      <h1>CANAL INTERCEPTADO</h1>
+      <p>Introduce el número de contacto para abrir una línea segura.</p>
+
+      <input id="phoneInput" class="phone-input" type="text" placeholder="Ej: 666 000 026" />
+      <button onclick="openChat()">Enviar mensaje</button>
+
+      <div id="errorMsg" class="error"></div>
+    </div>
+
+    <div id="chatScreen" class="screen">
+
+      <div class="chat-header">
+        <div class="avatar">M</div>
+        <div>
+          <strong>M-K0</strong><br>
+          <small>canal cifrado activo</small>
+        </div>
+      </div>
+
+      <div id="messages" class="messages"></div>
+
+      <div class="chat-input">
+        <input id="studentMessage" class="message-input" type="text" placeholder="Escribe una frase..." />
+        <button id="sendButton" class="send" onclick="sendStudentMessage()">➤</button>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    let mensajeAlumnoEnviado = false;
+
+    const mensajesIniciales = [
+      { tipo: "system", texto: "Conexión establecida con red clandestina." },
+      { tipo: "received", texto: "Soy M-K0. Señal débil, pero suficiente." },
+      { tipo: "received", texto: "Habéis entrado en una zona no vigilada por La Corporación, aunque no por mucho tiempo 😓." },
+      { tipo: "received", texto: "Si estás leyendo esto, La Corporación ya ha entrado en tu cabeza... pero aún tenemos tiempo." },
+      { tipo: "received", texto: "Averiguad el código oculto... lo tenéis delante. Solo mirad con atención. Lo que lo hace diferente lo hace único." }
+    ];
+
+    const mensajesDespues = [
+      { tipo: "received", texto: "No. Gracias a vosotros. Sois nuestra última esperanza." },
+      { tipo: "received", texto: "🍀 Buena suerte, resistencia. 🍀" },
+      /*{ tipo: "received", texto: "Necesitamos que localicéis sus protocolos ocultos y anuléis el sistema." },
+      { tipo: "received", texto: "Observad cada mensaje. Nada está puesto al azar." },
+      { tipo: "system", texto: "Nueva prueba desbloqueada: CICLO DE VIDA DEL PRODUCTO." },
+      { tipo: "received", texto: "Clasificad cada producto en su fase correcta: introducción, crecimiento, madurez o declive." },
+      { tipo: "received", texto: "Cuando lo consigáis, la siguiente clave aparecerá ante vosotros." }*/
+    ];
+
+    function openChat() {
+      const phone = document.getElementById("phoneInput").value.trim();
+      const error = document.getElementById("errorMsg");
+
+      if (phone !== "868024170509") {
+        error.textContent = "Número no reconocido. Introduce un contacto válido.";
+        return;
+      }
+
+      document.getElementById("loginScreen").classList.remove("active");
+      document.getElementById("chatScreen").classList.add("active");
+
+      lanzarMensajes(mensajesIniciales);
+    }
+
+    function lanzarMensajes(lista) {
+      const contenedor = document.getElementById("messages");
+
+      lista.forEach((msg, index) => {
+        setTimeout(() => {
+          const burbuja = document.createElement("div");
+          burbuja.className = "bubble " + msg.tipo;
+          burbuja.textContent = msg.texto;
+          contenedor.appendChild(burbuja);
+          contenedor.scrollTop = contenedor.scrollHeight;
+        }, index * 1200);
+      });
+    }
+
+    function sendStudentMessage() {
+      if (mensajeAlumnoEnviado) return;
+
+      const input = document.getElementById("studentMessage");
+      const boton = document.getElementById("sendButton");
+      const texto = input.value.trim();
+
+      if (texto === "") return;
+
+      const contenedor = document.getElementById("messages");
+
+      const burbuja = document.createElement("div");
+      burbuja.className = "bubble sent";
+      burbuja.textContent = texto;
+      contenedor.appendChild(burbuja);
+
+      input.value = "";
+      input.disabled = true;
+      boton.disabled = true;
+      mensajeAlumnoEnviado = true;
+
+      contenedor.scrollTop = contenedor.scrollHeight;
+
+      setTimeout(() => {
+        lanzarMensajes(mensajesDespues);
+      }, 900);
+    }
+
+    document.addEventListener("keydown", function(event) {
+      if (event.key === "Enter") {
+        const chatActivo = document.getElementById("chatScreen").classList.contains("active");
+        if (chatActivo) {
+          sendStudentMessage();
+        }
+      }
+    });
+  </script>
+
+</body>
+</html>
