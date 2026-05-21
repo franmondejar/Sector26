@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sector 26 - Verificador de Códigos</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #111a33;
+      --panel-2: #162447;
+      --text: #eaf2ff;
+      --muted: #9fb3d9;
+      --accent: #56f0c8;
+      --danger: #ff5f7a;
+      --warning: #ffd166;
+      --ok: #58f29b;
+      --border: rgba(255,255,255,.12);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, Helvetica, sans-serif;
+      background:
+        radial-gradient(circle at top, rgba(86, 240, 200, .12), transparent 35%),
+        linear-gradient(135deg, #070b16, var(--bg));
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .terminal {
+      width: 100%;
+      max-width: 820px;
+      background: rgba(17, 26, 51, .95);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      box-shadow: 0 24px 80px rgba(0,0,0,.45);
+      overflow: hidden;
+    }
+
+    .topbar {
+      background: #070b16;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--danger);
+    }
+
+    .dot:nth-child(2) { background: var(--warning); }
+    .dot:nth-child(3) { background: var(--ok); }
+
+    .topbar span {
+      margin-left: 10px;
+      color: var(--muted);
+      font-size: 14px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .content { padding: 30px; }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(28px, 5vw, 44px);
+      letter-spacing: .04em;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      margin-bottom: 28px;
+      line-height: 1.5;
+    }
+
+    .status-card {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px;
+      margin-bottom: 24px;
+    }
+
+    .status-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 0;
+      border-bottom: 1px dashed rgba(255,255,255,.12);
+    }
+
+    .status-line:last-child { border-bottom: none; }
+    .label { color: var(--muted); }
+    .value { color: var(--accent); font-weight: bold; text-align: right; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 640px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    .field {
+      background: rgba(255,255,255,.04);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+    }
+
+    label {
+      display: block;
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    select, input {
+      width: 100%;
+      padding: 14px 15px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.18);
+      background: #0b1020;
+      color: var(--text);
+      font-size: 18px;
+      outline: none;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(86,240,200,.14);
+    }
+
+    button {
+      margin-top: 18px;
+      width: 100%;
+      padding: 16px;
+      border: none;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #56f0c8, #4db5ff);
+      color: #06101d;
+      font-weight: 800;
+      font-size: 17px;
+      cursor: pointer;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+
+    button:hover { filter: brightness(1.06); }
+
+    .secondary-button {
+      margin-top: 10px;
+      background: rgba(255,255,255,.08);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .message {
+      margin-top: 22px;
+      padding: 18px;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.04);
+      line-height: 1.55;
+      min-height: 88px;
+    }
+
+    .message.ok {
+      border-color: rgba(88,242,155,.5);
+      background: rgba(88,242,155,.1);
+    }
+
+    .message.error {
+      border-color: rgba(255,95,122,.55);
+      background: rgba(255,95,122,.1);
+    }
+
+    .message.warning {
+      border-color: rgba(255,209,102,.55);
+      background: rgba(255,209,102,.1);
+    }
+
+    .small {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 14px;
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    .access-code {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 8px 12px;
+      border-radius: 10px;
+      background: #07111f;
+      color: var(--accent);
+      font-family: Consolas, monospace;
+      font-size: 18px;
+      letter-spacing: .04em;
+    }
+
+    .team-panel {
+      background: rgba(86,240,200,.08);
+      border: 1px solid rgba(86,240,200,.22);
+      border-radius: 18px;
+      padding: 18px;
+      margin-bottom: 24px;
+    }
+
+    .locked {
+      opacity: .55;
+      pointer-events: none;
+    }
+
+    .footer-credit {
+      margin-top: 18px;
+      padding: 14px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+      border-top: 1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.02);
+      line-height: 1.5;
+    }
+
+
+  </style>
+</head>
+<body>
+  <main class="terminal">
+    <div class="topbar">
+      <div class="dot"></div>
+      <div class="dot"></div>
+      <div class="dot"></div>
+      <span>Terminal Nómada // Sector 26</span>
+    </div>
+
+    <section class="content">
+      <h1>Verificador de códigos</h1>
+      <p class="subtitle">
+        Identificad vuestro equipo, introducid la caja correspondiente y verificad la clave obtenida durante la misión.
+        El sistema solo permitirá avanzar si las cajas anteriores han sido desbloqueadas.
+      </p>
+
+      <div class="team-panel" id="teamPanel">
+        <label for="teamInput">Identificación del equipo</label>
+        <input id="teamInput" type="text" placeholder="Ejemplo: Equipo Nómada 1" autocomplete="off" />
+        <button onclick="saveTeam()">Registrar equipo</button>
+      </div>
+
+      <div class="status-card">
+        <div class="status-line">
+          <span class="label">Equipo</span>
+          <span id="teamNameText" class="value">NO IDENTIFICADO</span>
+        </div>
+        <div class="status-line">
+          <span class="label">Puntuación</span>
+          <span id="scoreText" class="value">0 PUNTOS</span>
+        </div>
+        <div class="status-line">
+          <span class="label">Progreso</span>
+          <span id="progressText" class="value">CAJA 0 DISPONIBLE</span>
+        </div>
+      </div>
+
+      <div id="verificationPanel" class="locked">
+        <div class="grid">
+          <div class="field">
+            <label for="boxSelect">Caja</label>
+            <select id="boxSelect"></select>
+          </div>
+
+          <div class="field">
+            <label for="passwordInput">Clave</label>
+            <input id="passwordInput" type="text" placeholder="Introduce la clave" autocomplete="off" />
+          </div>
+        </div>
+
+        <button onclick="checkPassword()">Verificar acceso</button>
+        <button class="secondary-button" onclick="changeTeamName()">Cambiar nombre del equipo</button>
+        <button class="secondary-button" onclick="resetMission()">Reiniciar misión / nuevo equipo</button>
+      </div>
+
+      <div id="message" class="message warning">
+        Registrad primero el nombre del equipo para activar el sistema.
+      </div>
+
+      <p class="small">
+        Los datos se guardan en este navegador mediante almacenamiento local. Si cambiáis de dispositivo o borráis datos del navegador, el progreso se reinicia.
+      </p>
+    </section>
+
+    <footer class="footer-credit">
+      Sistema Nómada v1.0<br>
+      Francisco Mondéjar — Licencia CC BY-SA 4.0
+    </footer>
+
+
+  </main>
+
+  <script>
+    const scriptURL = "https://script.google.com/macros/s/AKfycbz6UdCgXE4wv8u4gNZkAbaWAk6765CF-YTXDRbi3KNfhQaRvsSImECHxD4LqF5ftCXU/exec";
+    
+    // CAMBIA AQUÍ LAS CLAVES, LOS PUNTOS Y LA PENALIZACIÓN
+    const penaltyWrongAnswer = 2;
+
+    // CLAVE DOCENTE PARA REINICIAR LA MISIÓN
+    const teacherResetPassword = "PROFE26";
+
+    const boxes = [
+      {
+        id: "caja0",
+        title: "Caja 0 — Activación",
+        key: [
+          "EMOCIONES",
+          "EMOCIONAL",
+        ],
+        points: 10,
+        success: "Acceso inicial concedido.",
+        next: "Caja 0 desbloqueada. Dirigíos a la siguiente caja."
+      },
+      {
+        id: "caja1",
+        title: "Caja 1 — SEGMENTACIÓN DEL MERCADO",
+        key: "COMPRA",
+        points: 10,
+        success: "Segmentación del mercado lograda. Los datos han sido recuperados.",
+        next: "Caja 1 desbloqueada. Dirigíos a la siguiente caja."
+      },
+      {
+        id: "caja2",
+        title: "Caja 2 — CEREBRO TRIUNO",
+        key: "OBEDECE",
+        points: 10,
+        success: "Cerebros identificados. El control de La Corporación está perdiendo fuerza. La gente empieza a despertar.",
+        next: "Caja 2 desbloqueada. Dirigíos a la siguiente caja."
+      },
+      {
+        id: "caja3",
+        title: "Caja 3 — ESTRATEGIAS DE MARKETING",
+        key: "S0NR13",
+        points: 10,
+        success: "Código validado. Habéis identificado correctamente las zonas y las estrategias.",
+        next: "Caja 3 desbloqueada. Dirigíos a la siguiente caja."
+      },
+      {
+        id: "caja4",
+        title: "Caja 4 — PROTOCOLO FÉNIX",
+        key: "VIVE",
+        points: 10,
+        success: "Protocolo Fénix desactivado. La Corporación ha perdido su poder. La gente ha despertado.",
+        next: "Misión finalizada. Comunicad vuestras conclusiones a Nómada a través del informe elaborado durante la misión."
+      }
+    ];
+
+    let teamName = "";
+    let highestUnlockedIndex = 0;
+    let score = 0;
+    let completedBoxes = [];
+
+    function normalize(text) {
+      return text
+        .trim()
+        .toUpperCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/\s+/g, "")
+        .replace(/-/g, "");
+    }
+
+    async function sendToSheet(box, result, pointsChange) {
+      if (!scriptURL || scriptURL.includes("PEGA_AQUI")) return;
+
+      try {
+        await fetch(scriptURL, {
+          method: "POST",
+          mode: "no-cors",
+          body: JSON.stringify({
+            team: teamName,
+            box: box,
+            result: result,
+            score: score,
+            pointsChange: pointsChange,
+            completedBoxes: completedBoxes.join(", ")
+          })
+        });
+      } catch (error) {
+        console.error("Error enviando datos a Google Sheets:", error);
+      }
+    }
+
+    function saveState() {
+      const state = {
+        teamName,
+        highestUnlockedIndex,
+        score,
+        completedBoxes
+      };
+      localStorage.setItem("sector26State", JSON.stringify(state));
+    }
+
+    function loadState() {
+      const saved = localStorage.getItem("sector26State");
+      if (!saved) return;
+
+      try {
+        const state = JSON.parse(saved);
+        teamName = state.teamName || "";
+        highestUnlockedIndex = state.highestUnlockedIndex || 0;
+        score = state.score || 0;
+        completedBoxes = state.completedBoxes || [];
+      } catch (error) {
+        localStorage.removeItem("sector26State");
+      }
+    }
+
+    function saveTeam() {
+      const input = document.getElementById("teamInput");
+      const message = document.getElementById("message");
+      const cleanName = input.value.trim();
+
+      message.className = "message";
+
+      if (!cleanName) {
+        message.classList.add("error");
+        message.innerHTML = "Debéis introducir un nombre de equipo para activar la terminal.";
+        return;
+      }
+
+      teamName = cleanName;
+      saveState();
+      updateUI();
+
+      message.classList.add("ok");
+      message.innerHTML = `
+        <strong>EQUIPO REGISTRADO.</strong><br>
+        Bienvenido, ${teamName}. La Caja 0 ya está disponible.
+      `;
+    }
+
+    function renderBoxOptions() {
+      const select = document.getElementById("boxSelect");
+      const currentValue = select.value;
+      select.innerHTML = "";
+
+      for (let i = 0; i <= highestUnlockedIndex; i++) {
+        const option = document.createElement("option");
+        option.value = boxes[i].id;
+        option.textContent = boxes[i].title;
+        select.appendChild(option);
+      }
+
+      if ([...select.options].some(option => option.value === currentValue)) {
+        select.value = currentValue;
+      } else {
+        select.value = boxes[highestUnlockedIndex].id;
+      }
+    }
+
+    function updateUI() {
+      document.getElementById("teamNameText").textContent = teamName ? teamName.toUpperCase() : "NO IDENTIFICADO";
+      document.getElementById("scoreText").textContent = score + " PUNTOS";
+      document.getElementById("progressText").textContent = boxes[highestUnlockedIndex].title.toUpperCase() + " DISPONIBLE";
+      document.getElementById("verificationPanel").classList.toggle("locked", !teamName);
+      document.getElementById("teamPanel").style.display = teamName ? "none" : "block";
+      renderBoxOptions();
+    }
+
+    function getSelectedBoxIndex() {
+      const selectedBoxId = document.getElementById("boxSelect").value;
+      return boxes.findIndex(box => box.id === selectedBoxId);
+    }
+
+    function checkPassword() {
+      const selectedIndex = getSelectedBoxIndex();
+      const selectedBox = boxes[selectedIndex];
+      const userInput = document.getElementById("passwordInput").value;
+      const message = document.getElementById("message");
+
+      const correctKeys = Array.isArray(selectedBox.key)
+        ? selectedBox.key.map(k => normalize(k))
+        : [normalize(selectedBox.key)];
+      const typedKey = normalize(userInput);
+
+      message.className = "message";
+
+      if (!teamName) {
+        message.classList.add("warning");
+        message.innerHTML = "Registrad primero el nombre del equipo para activar el sistema.";
+        return;
+      }
+
+      if (!typedKey) {
+        message.classList.add("warning");
+        message.innerHTML = "No se ha introducido ninguna clave. El sistema permanece bloqueado.";
+        return;
+      }
+
+      if (correctKeys.includes(typedKey)){
+        let pointsAdded = 0;
+
+        if (!completedBoxes.includes(selectedBox.id)) {
+          completedBoxes.push(selectedBox.id);
+          score += selectedBox.points;
+          pointsAdded = selectedBox.points;
+        }
+
+        if (selectedIndex === highestUnlockedIndex && highestUnlockedIndex < boxes.length - 1) {
+          highestUnlockedIndex++;
+        }
+
+        saveState();
+        updateUI();
+        document.getElementById("boxSelect").value = boxes[highestUnlockedIndex].id;
+        document.getElementById("passwordInput").value = "";
+
+        sendToSheet(selectedBox.title, "Correcto", pointsAdded);
+
+        message.classList.add("ok");
+        message.innerHTML = `
+          <strong>ACCESO CONCEDIDO.</strong><br>
+          ${selectedBox.success}<br>
+          <span class="access-code">+${pointsAdded} puntos</span><br>
+          <span class="access-code">${selectedBox.next}</span>
+        `;
+      } else {
+        const previousScore = score;
+        score = Math.max(0, score - penaltyWrongAnswer);
+        saveState();
+        updateUI();
+
+        const pointsLost = previousScore - score;
+
+        saveState();
+        updateUI();
+        sendToSheet(selectedBox.title, "Incorrecto", -pointsLost);
+
+        message.classList.add("error");
+        message.innerHTML = `
+          <strong>ACCESO DENEGADO.</strong><br>
+          La clave introducida no coincide con los registros de Nómada.<br>
+          Penalización aplicada: <span class="access-code">-${pointsLost} puntos</span><br>
+          Revisad los cálculos, los emparejamientos o la interpretación antes de intentarlo de nuevo.
+        `;
+      }
+    }
+
+    function changeTeamName() {
+      const oldTeamName = teamName;
+
+      const newName = prompt("Introduce el nuevo nombre del equipo:", oldTeamName);
+      const message = document.getElementById("message");
+
+      if (newName === null) return;
+
+      const cleanName = newName.trim();
+
+      message.className = "message";
+
+      if (!cleanName) {
+        message.classList.add("error");
+        message.innerHTML = "El nombre del equipo no puede quedar vacío.";
+        return;
+      }
+
+      teamName = cleanName;
+
+      saveState();
+      updateUI();
+
+      sendToSheet(
+        "Sistema",
+        "Cambio de nombre: " + oldTeamName + " → " + teamName,
+        0
+      );
+
+      message.classList.add("ok");
+      message.innerHTML = `
+        <strong>NOMBRE ACTUALIZADO.</strong><br>
+        Antes: ${oldTeamName}<br>
+        Ahora: ${teamName}
+      `;
+    }
+
+    function resetMission() {
+      const password = prompt("Introduce la clave docente para reiniciar la misión:");
+      const message = document.getElementById("message");
+
+      if (password === null) return;
+
+      if (normalize(password) !== normalize(teacherResetPassword)) {
+        message.className = "message error";
+        message.innerHTML = `
+          <strong>REINICIO DENEGADO.</strong><br>
+          La clave docente no es correcta.
+        `;
+        return;
+      }
+
+      const confirmReset = confirm("Clave aceptada. ¿Seguro que quieres reiniciar la misión de este equipo?");
+      if (!confirmReset) return;
+
+      localStorage.removeItem("sector26State");
+      teamName = "";
+      highestUnlockedIndex = 0;
+      score = 0;
+      completedBoxes = [];
+      document.getElementById("teamInput").value = "";
+      document.getElementById("passwordInput").value = "";
+      updateUI();
+
+      message.className = "message warning";
+      message.innerHTML = "Misión reiniciada. Registrad un nuevo equipo para comenzar.";
+    }
+
+    document.getElementById("passwordInput").addEventListener("keydown", function(event) {
+      if (event.key === "Enter") checkPassword();
+    });
+
+    document.getElementById("teamInput").addEventListener("keydown", function(event) {
+      if (event.key === "Enter") saveTeam();
+    });
+
+    loadState();
+    updateUI();
+  </script>
+</body>
+</html>
